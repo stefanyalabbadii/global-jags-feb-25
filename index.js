@@ -33,11 +33,39 @@ exports.generateThumbdata = async (file, context) => {
 
     console.log(`Downloaded ${gcsFile.name} to ${tempFilePath}`);
 
-    // For V1, we'll just log that we've downloaded the file and not do any further processing
-    // Future versions might resize the image, upload it elsewhere, etc.
-
     // Delete the local copy of the file to clean up
     await fs.remove(tempFilePath);
     console.log(`Deleted local file ${tempFilePath}`);
 };
 
+exports.processUpload = async (event, context) => {
+    const storage = new Storage();
+    const file = storage.bucket(event.bucket).file(event.name);
+  
+    // Download and check content type
+    const [metadata] = await file.getMetadata();
+    if (!['image/jpeg', 'image/png'].includes(metadata.contentType)) {
+      console.log('File is not a valid image.');
+      await file.delete();
+      return;
+    }
+  
+    // Process image and generate thumbnail
+    const tempFilePath = path.join(os.tmpdir(), path.basename(file.name));
+    await file.download({destination: tempFilePath});
+  
+    // Thumbnail generation
+    const thumbFilePath = path.join(os.tmpdir(), `thumb_${path.basename(file.name)}`);
+    await sharp(tempFilePath)
+      .resize({width: 64})
+      .toFile(thumbFilePath);
+  
+    // Upload thumbnail and original file to respective buckets
+    await storage.bucket('sp24-41200-sfalabba-gj-thumbnails').upload(thumbFilePath);
+    await storage.bucket('sp24-41200-sfalabba-gj-finals').upload(tempFilePath);
+  
+    // Clean up
+    await fs.remove(tempFilePath);
+    await fs.remove(thumbFilePath);
+    await file.delete();
+};
