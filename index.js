@@ -77,3 +77,17 @@ const exifData = await getExif(tempFilePath);
 if (exifData && exifData.gps) {
   console.log(`GPS Data: Latitude - ${exifData.gps.GPSLatitude}, Longitude - ${exifData.gps.GPSLongitude}`);
 }
+// Additional import for Firestore
+const {Firestore} = require('@google-cloud/firestore');
+
+// Firestore initialization
+const firestore = new Firestore();
+
+// Incorporate into the V3 process, after extracting EXIF data
+const docRef = firestore.collection('photos').doc();
+await docRef.set({
+  thumbURL: `URL_TO_YOUR_THUMBNAIL_IMAGE`,
+  imageURL: `URL_TO_YOUR_FINAL_IMAGE`,
+  latitude: `EXTRACTED_LATITUDE`,
+  longitude: `EXTRACTED_LONGITUDE`
+});
