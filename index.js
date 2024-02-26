@@ -69,3 +69,11 @@ exports.processUpload = async (event, context) => {
     await fs.remove(thumbFilePath);
     await file.delete();
 };
+// Additional imports for EXIF processing
+const getExif = require('exif-async');
+
+// Incorporate into the V2 process, after downloading the file
+const exifData = await getExif(tempFilePath);
+if (exifData && exifData.gps) {
+  console.log(`GPS Data: Latitude - ${exifData.gps.GPSLatitude}, Longitude - ${exifData.gps.GPSLongitude}`);
+}
